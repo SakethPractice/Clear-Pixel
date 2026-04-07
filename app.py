@@ -33,12 +33,17 @@ def to_download_bytes(image: np.ndarray) -> bytes:
     return buffer.tobytes()
 
 
-def resize_for_preview(image: np.ndarray, max_width: int = 760) -> np.ndarray:
+def resize_for_preview(
+    image: np.ndarray,
+    max_width: int = 760,
+    max_height: int = 460,
+) -> np.ndarray:
     height, width = image.shape[:2]
-    if width <= max_width:
+    if width <= max_width and height <= max_height:
         return image
-    scale = max_width / width
+    scale = min(max_width / width, max_height / height)
     new_size = (max_width, max(1, int(height * scale)))
+    new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
     return cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
 
 
@@ -54,9 +59,10 @@ def render_comparison_slider(
     processed_image: np.ndarray,
     *,
     max_preview_width: int = 760,
+    max_preview_height: int = 460,
 ) -> None:
-    preview_original = resize_for_preview(original_image, max_preview_width)
-    preview_processed = resize_for_preview(processed_image, max_preview_width)
+    preview_original = resize_for_preview(original_image, max_preview_width, max_preview_height)
+    preview_processed = resize_for_preview(processed_image, max_preview_width, max_preview_height)
     preview_height, preview_width = preview_original.shape[:2]
     component_height = preview_height + 54
 
@@ -206,13 +212,14 @@ feature_columns[0].info("Upload an image and test convolution interactively.")
 feature_columns[1].info("Switch between blur and sharpen with adjustable kernel size.")
 feature_columns[2].info("Inspect the result, compare it, and download the output.")
 
-uploaded_file = st.file_uploader(
-    "Upload an image",
-    type=["png", "jpg", "jpeg"],
-)
-
-mode = st.selectbox("Select operation", options=["blur", "sharpen"])
-kernel_size = st.slider("Choose kernel size", min_value=3, max_value=15, step=2, value=3)
+with st.sidebar:
+    st.header("Controls")
+    uploaded_file = st.file_uploader(
+        "Upload an image",
+        type=["png", "jpg", "jpeg"],
+    )
+    mode = st.selectbox("Select operation", options=["blur", "sharpen"])
+    kernel_size = st.slider("Choose kernel size", min_value=3, max_value=15, step=2, value=3)
 
 if uploaded_file is not None:
     try:
@@ -220,6 +227,8 @@ if uploaded_file is not None:
         start_time = perf_counter()
         processed_image, kernel = process_image(original_image, mode, kernel_size)
         processing_time_ms = (perf_counter() - start_time) * 1000
+        preview_original = resize_for_preview(original_image, max_width=520, max_height=360)
+        preview_processed = resize_for_preview(processed_image, max_width=520, max_height=360)
 
         stats_columns = st.columns(4)
         stats_columns[0].metric("Operation", mode.title())
@@ -235,11 +244,11 @@ if uploaded_file is not None:
 
         with preview_columns[0]:
             st.markdown("#### Original image")
-            st.image(to_rgb(original_image), width="stretch")
+            st.image(to_rgb(preview_original), width=preview_original.shape[1])
 
         with preview_columns[1]:
             st.markdown("#### Processed image")
-            st.image(to_rgb(processed_image), width="stretch")
+            st.image(to_rgb(preview_processed), width=preview_processed.shape[1])
 
         st.markdown("#### Kernel used")
         st.code(np.array2string(kernel, precision=3), language="text")
