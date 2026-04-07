@@ -7,11 +7,7 @@ import cv2
 import numpy as np
 
 
-BLUR_KERNEL = np.ones((3, 3), dtype=np.float32) / 9
-SHARPEN_KERNEL = np.array(
-    [[0, -1, 0], [-1, 5, -1], [0, -1, 0]],
-    dtype=np.float32,
-)
+DEFAULT_KERNEL_SIZE = 3
 
 
 def convolve_matrices(image_matrix: np.ndarray, kernel: np.ndarray) -> np.ndarray:
@@ -32,12 +28,32 @@ def save_image(output_path: Path, image: np.ndarray) -> None:
         raise OSError(f"Could not write image: {output_path}")
 
 
-def get_kernel(mode: str) -> np.ndarray:
+def build_blur_kernel(kernel_size: int) -> np.ndarray:
+    return np.ones((kernel_size, kernel_size), dtype=np.float32) / (kernel_size * kernel_size)
+
+
+def build_sharpen_kernel(kernel_size: int) -> np.ndarray:
+    kernel = -1 * np.ones((kernel_size, kernel_size), dtype=np.float32)
+    center_index = kernel_size // 2
+    kernel[center_index, center_index] = (kernel_size * kernel_size) + (kernel_size * kernel_size - 2)
+    return kernel
+
+
+def get_kernel(mode: str, kernel_size: int = DEFAULT_KERNEL_SIZE) -> np.ndarray:
+    if kernel_size % 2 == 0 or kernel_size < 3:
+        raise ValueError("Kernel size must be an odd number greater than or equal to 3.")
+
     kernels = {
-        "blur": BLUR_KERNEL,
-        "sharpen": SHARPEN_KERNEL,
+        "blur": build_blur_kernel(kernel_size),
+        "sharpen": build_sharpen_kernel(kernel_size),
     }
     return kernels[mode]
+
+
+def process_image(image: np.ndarray, mode: str, kernel_size: int = DEFAULT_KERNEL_SIZE) -> tuple[np.ndarray, np.ndarray]:
+    kernel = get_kernel(mode, kernel_size)
+    processed_image = convolve_matrices(image, kernel)
+    return processed_image, kernel
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,6 +76,12 @@ def parse_args() -> argparse.Namespace:
         default="blur",
         help="Convolution mode to apply.",
     )
+    parser.add_argument(
+        "--kernel-size",
+        type=int,
+        default=DEFAULT_KERNEL_SIZE,
+        help="Odd kernel size to use for convolution.",
+    )
     return parser.parse_args()
 
 
@@ -69,11 +91,11 @@ def main() -> None:
     output_path = Path(args.output)
 
     image = load_image(input_path)
-    kernel = get_kernel(args.mode)
-    processed_image = convolve_matrices(image, kernel)
+    processed_image, kernel = process_image(image, args.mode, args.kernel_size)
     save_image(output_path, processed_image)
 
     print(f"Mode applied : {args.mode}")
+    print(f"Kernel size  : {args.kernel_size}")
     print(f"Input image  : {input_path}")
     print(f"Output image : {output_path}")
     print("Kernel used:")
