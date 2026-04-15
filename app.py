@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+from pathlib import Path
 from time import perf_counter
 
 import cv2
@@ -12,297 +13,12 @@ from src.convolution import process_image
 
 
 st.set_page_config(page_title="Clear-Pixel", page_icon=":camera:", layout="wide")
+APP_DIR = Path(__file__).parent
 
 
 def inject_page_styles() -> None:
-    st.markdown(
-        """
-        <style>
-          :root {
-            --page-bg: linear-gradient(180deg, #f3efe7 0%, #e8f0ec 45%, #f4f7fb 100%);
-            --panel-bg: rgba(255, 255, 255, 0.96);
-            --panel-border: rgba(148, 163, 184, 0.34);
-            --text-main: #172033;
-            --text-muted: #4f5d75;
-            --accent: #0f766e;
-            --accent-soft: #dff6f2;
-            --accent-strong: #b45309;
-            --shadow: 0 20px 42px rgba(15, 23, 42, 0.12);
-          }
-
-          [data-testid="stAppViewContainer"] {
-            background: var(--page-bg);
-          }
-
-          [data-testid="stHeader"] {
-            background: transparent;
-          }
-
-          [data-testid="stSidebar"] {
-            background:
-              radial-gradient(circle at top, rgba(15, 118, 110, 0.12), transparent 36%),
-              linear-gradient(180deg, #f9f7f1 0%, #eef5f1 100%);
-            border-right: 1px solid rgba(148, 163, 184, 0.28);
-            box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.55);
-          }
-
-          [data-testid="stSidebar"] .block-container {
-            padding-top: 1.4rem;
-          }
-
-          .hero-panel,
-          .empty-state,
-          .section-panel {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 24px;
-            box-shadow: var(--shadow);
-          }
-
-          .hero-panel *,
-          .empty-state *,
-          .sidebar-wrap * {
-            position: relative;
-            z-index: 1;
-          }
-
-          .hero-panel {
-            padding: 1.8rem 1.9rem;
-            margin-bottom: 1.2rem;
-            position: relative;
-            overflow: hidden;
-          }
-
-          .hero-panel::after {
-            content: "";
-            position: absolute;
-            inset: auto -60px -90px auto;
-            width: 200px;
-            height: 200px;
-            border-radius: 999px;
-            background: radial-gradient(circle, rgba(15, 118, 110, 0.18), transparent 68%);
-          }
-
-          .hero-kicker,
-          .panel-kicker {
-            display: inline-block;
-            padding: 0.35rem 0.8rem;
-            border-radius: 999px;
-            font-size: 0.76rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--accent);
-            background: var(--accent-soft);
-          }
-
-          .hero-title {
-            margin: 0.95rem 0 0.45rem;
-            font-size: 2.65rem;
-            line-height: 1.05;
-            font-weight: 800;
-            color: var(--text-main);
-          }
-
-          .hero-copy,
-          .panel-copy,
-          .sidebar-copy,
-          .empty-copy {
-            color: var(--text-muted);
-            font-size: 1rem;
-            line-height: 1.65;
-          }
-
-          .hero-grid,
-          .empty-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 0.8rem;
-            margin-top: 1.1rem;
-          }
-
-          .hero-chip,
-          .empty-card {
-            padding: 0.9rem 1rem;
-            border-radius: 18px;
-            background: #fcfdff;
-            border: 1px solid rgba(148, 163, 184, 0.24);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
-          }
-
-          .hero-chip strong,
-          .empty-card strong,
-          .sidebar-card strong {
-            display: block;
-            margin-bottom: 0.2rem;
-            color: var(--text-main);
-          }
-
-          .empty-state {
-            padding: 2rem;
-            margin-top: 1rem;
-          }
-
-          .empty-title {
-            margin: 0.9rem 0 0.4rem;
-            font-size: 2rem;
-            line-height: 1.1;
-            color: var(--text-main);
-          }
-
-          .empty-note {
-            margin-top: 1rem;
-            padding: 0.95rem 1rem;
-            border-left: 4px solid var(--accent-strong);
-            background: rgba(180, 83, 9, 0.08);
-            border-radius: 14px;
-            color: #7c4a13;
-            font-size: 0.95rem;
-          }
-
-          .sidebar-wrap {
-            padding: 0.2rem 0 0.6rem;
-          }
-
-          .sidebar-title {
-            margin: 0.9rem 0 0.35rem;
-            font-size: 1.45rem;
-            font-weight: 800;
-            color: var(--text-main);
-          }
-
-          .sidebar-card {
-            margin: 1rem 0 1.25rem;
-            padding: 1rem;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.98);
-            border: 1px solid rgba(148, 163, 184, 0.22);
-            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
-          }
-
-          .sidebar-meta {
-            margin-top: 0.7rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.45rem;
-            color: var(--text-muted);
-            font-size: 0.93rem;
-          }
-
-          .stButton > button,
-          .stDownloadButton > button {
-            border-radius: 999px;
-            border: none;
-            background: linear-gradient(135deg, #0f766e 0%, #1d4ed8 100%);
-            color: white;
-            font-weight: 700;
-            padding: 0.6rem 1.25rem;
-            box-shadow: 0 12px 26px rgba(29, 78, 216, 0.18);
-          }
-
-          .stFileUploader,
-          .stSelectbox,
-          .stSlider {
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 16px;
-            border: 1px solid rgba(148, 163, 184, 0.22);
-            padding: 0.35rem 0.45rem 0.55rem;
-            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
-          }
-
-          [data-testid="stFileUploaderDropzone"] {
-            background: #f8fafc;
-            border: 1px dashed rgba(71, 85, 105, 0.45);
-          }
-
-          [data-testid="stBaseButton-secondary"] {
-            background: #ffffff;
-            color: var(--text-main);
-            border: 1px solid rgba(148, 163, 184, 0.35);
-          }
-
-          [data-testid="stMetric"] {
-            background: rgba(255, 255, 255, 0.98);
-            border: 1px solid rgba(148, 163, 184, 0.22);
-            padding: 1rem;
-            border-radius: 18px;
-            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
-          }
-
-          [data-testid="stMetricLabel"],
-          [data-testid="stMetricLabel"] *,
-          [data-testid="stMetricValue"],
-          [data-testid="stMetricValue"] * {
-            color: var(--text-main) !important;
-          }
-
-          [data-testid="stMetricLabel"] {
-            opacity: 0.88;
-          }
-
-          [data-testid="stWidgetLabel"] p,
-          .stCaption,
-          .stMarkdown p,
-          label,
-          .sidebar-copy,
-          .empty-copy {
-            color: var(--text-muted) !important;
-            opacity: 1 !important;
-          }
-
-          .hero-title,
-          .hero-copy,
-          .hero-chip,
-          .hero-chip strong,
-          .empty-title,
-          .empty-card,
-          .empty-card strong,
-          .sidebar-title,
-          .sidebar-card,
-          .sidebar-card strong {
-            opacity: 1 !important;
-            color: var(--text-main) !important;
-          }
-
-          .stInfo {
-            background: linear-gradient(180deg, #d6ecff 0%, #c8e4fb 100%);
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            color: #12314d;
-          }
-
-          .stInfo p {
-            color: #174166 !important;
-          }
-
-          .stSelectbox [data-baseweb="select"] > div,
-          .stFileUploader section,
-          .stSlider > div[data-baseweb="slider"] {
-            background: transparent;
-          }
-
-          [data-testid="stSidebar"] [data-baseweb="select"] > div {
-            background: #ffffff;
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            color: var(--text-main);
-          }
-
-          [data-testid="stSidebar"] [data-baseweb="slider"] [role="slider"] {
-            box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.14);
-          }
-
-          @media (max-width: 900px) {
-            .hero-title {
-              font-size: 2.1rem;
-            }
-
-            .empty-title {
-              font-size: 1.7rem;
-            }
-          }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    css = (APP_DIR / "styles.css").read_text(encoding="utf-8")
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 
 def decode_uploaded_image(file_bytes: bytes) -> np.ndarray:
@@ -549,47 +265,51 @@ def render_empty_state() -> None:
     )
 
 
-inject_page_styles()
-
-st.markdown(
-    """
-    <div class="hero-panel">
-      <span class="hero-kicker">Interactive image lab</span>
-      <h1 class="hero-title">Clear-Pixel</h1>
-      <p class="hero-copy">
-        Explore matrix convolution through a cleaner, more visual workflow for soft blur, edge-focused sharpening, and quick before-and-after review.
-      </p>
-      <div class="hero-grid">
-        <div class="hero-chip"><strong>Live comparison</strong>Drag the center divider to inspect detail changes.</div>
-        <div class="hero-chip"><strong>Kernel control</strong>Scale the effect with odd-sized convolution kernels.</div>
-        <div class="hero-chip"><strong>Quick export</strong>Download the processed image as a PNG when it looks right.</div>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-feature_columns = st.columns(3)
-feature_columns[0].info("Upload an image and test convolution interactively.")
-feature_columns[1].info("Switch between blur and sharpen with adjustable kernel size.")
-feature_columns[2].info("Inspect the result, compare it, and download the output.")
-
-with st.sidebar:
-    render_sidebar_intro()
-    uploaded_file = st.file_uploader(
-        "Upload an image",
-        type=["png", "jpg", "jpeg"],
-        help="Supported formats: PNG, JPG, and JPEG.",
+def render_hero_section() -> None:
+    st.markdown(
+        """
+        <div class="hero-panel">
+          <span class="hero-kicker">Interactive image lab</span>
+          <h1 class="hero-title">Clear-Pixel</h1>
+          <p class="hero-copy">
+            Explore matrix convolution through a cleaner, more visual workflow for soft blur, edge-focused sharpening, and quick before-and-after review.
+          </p>
+          <div class="hero-grid">
+            <div class="hero-chip"><strong>Live comparison</strong>Drag the center divider to inspect detail changes.</div>
+            <div class="hero-chip"><strong>Kernel control</strong>Scale the effect with odd-sized convolution kernels.</div>
+            <div class="hero-chip"><strong>Quick export</strong>Download the processed image as a PNG when it looks right.</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    mode = st.selectbox(
-        "Processing style",
-        options=["blur", "sharpen"],
-        format_func=lambda option: "Soft Blur" if option == "blur" else "Crisp Sharpen",
-    )
-    kernel_size = st.slider("Kernel intensity", min_value=3, max_value=15, step=2, value=3)
-    st.caption("Lower values keep the effect subtle. Higher values make the blur or sharpening more dramatic.")
 
-if uploaded_file is not None:
+    feature_columns = st.columns(3)
+    feature_columns[0].info("Upload an image and test convolution interactively.")
+    feature_columns[1].info("Switch between blur and sharpen with adjustable kernel size.")
+    feature_columns[2].info("Inspect the result, compare it, and download the output.")
+
+
+def render_sidebar_controls():
+    with st.sidebar:
+        render_sidebar_intro()
+        uploaded_file = st.file_uploader(
+            "Upload an image",
+            type=["png", "jpg", "jpeg"],
+            help="Supported formats: PNG, JPG, and JPEG.",
+        )
+        mode = st.selectbox(
+            "Processing style",
+            options=["blur", "sharpen"],
+            format_func=lambda option: "Soft Blur" if option == "blur" else "Crisp Sharpen",
+        )
+        kernel_size = st.slider("Kernel intensity", min_value=3, max_value=15, step=2, value=3)
+        st.caption("Lower values keep the effect subtle. Higher values make the blur or sharpening more dramatic.")
+
+    return uploaded_file, mode, kernel_size
+
+
+def render_processed_view(uploaded_file, mode: str, kernel_size: int) -> None:
     try:
         original_image = decode_uploaded_image(uploaded_file.getvalue())
         start_time = perf_counter()
@@ -629,5 +349,17 @@ if uploaded_file is not None:
         )
     except ValueError as error:
         st.error(str(error))
-else:
-    render_empty_state()
+
+
+def main() -> None:
+    inject_page_styles()
+    render_hero_section()
+    uploaded_file, mode, kernel_size = render_sidebar_controls()
+
+    if uploaded_file is not None:
+        render_processed_view(uploaded_file, mode, kernel_size)
+    else:
+        render_empty_state()
+
+
+main()
