@@ -1,21 +1,36 @@
 :root {
-  --page-bg: linear-gradient(180deg, #f3efe7 0%, #e8f0ec 45%, #f4f7fb 100%);
-  --panel-bg: rgba(255, 255, 255, 0.96);
-  --panel-border: rgba(148, 163, 184, 0.34);
+  --page-bg:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.14), transparent 28%),
+    linear-gradient(180deg, #e7e0d3 0%, #dce7e1 46%, #e7eef6 100%);
+  --panel-bg: rgba(255, 255, 255, 0.98);
+  --panel-border: rgba(100, 116, 139, 0.28);
   --text-main: #172033;
-  --text-muted: #4f5d75;
+  --text-strong: #0f172a;
+  --text-muted: #475569;
   --accent: #0f766e;
-  --accent-soft: #dff6f2;
+  --accent-soft: #d7f1ec;
   --accent-strong: #b45309;
-  --shadow: 0 20px 42px rgba(15, 23, 42, 0.12);
+  --shadow: 0 20px 42px rgba(15, 23, 42, 0.16);
 }
 
 [data-testid="stAppViewContainer"] {
   background: var(--page-bg);
 }
 
+[data-testid="stAppViewContainer"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(15, 23, 42, 0.02));
+}
+
 [data-testid="stHeader"] {
   background: transparent;
+}
+
+[data-testid="stToolbar"] {
+  right: 1rem;
 }
 
 [data-testid="stSidebar"] {
@@ -80,7 +95,7 @@
   font-size: 2.65rem;
   line-height: 1.05;
   font-weight: 800;
-  color: var(--text-main);
+  color: var(--text-strong);
 }
 
 .hero-copy,
@@ -178,6 +193,17 @@
   box-shadow: 0 12px 26px rgba(29, 78, 216, 0.18);
 }
 
+.stMarkdown h1,
+.stMarkdown h2,
+.stMarkdown h3,
+.stMarkdown h4,
+.stMarkdown h5,
+.stMarkdown h6 {
+  color: var(--text-strong) !important;
+  opacity: 1 !important;
+  letter-spacing: -0.02em;
+}
+
 .stFileUploader,
 .stSelectbox,
 .stSlider {
@@ -228,6 +254,11 @@ label,
   opacity: 1 !important;
 }
 
+.stCaption,
+[data-testid="stCaptionContainer"] p {
+  color: var(--text-muted) !important;
+}
+
 .hero-title,
 .hero-copy,
 .hero-chip,
@@ -240,6 +271,11 @@ label,
 .sidebar-card strong {
   opacity: 1 !important;
   color: var(--text-main) !important;
+}
+
+[data-testid="stImage"] img {
+  border-radius: 18px;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.14);
 }
 
 .stInfo {

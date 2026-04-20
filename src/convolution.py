@@ -32,10 +32,16 @@ def build_blur_kernel(kernel_size: int) -> np.ndarray:
     return np.ones((kernel_size, kernel_size), dtype=np.float32) / (kernel_size * kernel_size)
 
 
+def get_sharpen_strength(kernel_size: int) -> float:
+    """Scale sharpening a little with kernel size while keeping it stable."""
+    return min(1.35 + ((kernel_size - 3) // 2) * 0.12, 2.0)
+
+
 def build_sharpen_kernel(kernel_size: int) -> np.ndarray:
-    kernel = -1 * np.ones((kernel_size, kernel_size), dtype=np.float32)
+    strength = get_sharpen_strength(kernel_size)
+    kernel = -strength * build_blur_kernel(kernel_size)
     center_index = kernel_size // 2
-    kernel[center_index, center_index] = (kernel_size * kernel_size) + (kernel_size * kernel_size - 2)
+    kernel[center_index, center_index] += 1.0 + strength
     return kernel
 
 
